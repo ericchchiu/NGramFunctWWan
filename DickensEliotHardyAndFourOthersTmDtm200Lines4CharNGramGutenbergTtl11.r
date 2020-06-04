@@ -1,4 +1,5 @@
-#7 authors
+#7 authors. for more details of the code below, see:
+#DickensEliotHardyAndFourOthersTmDtm200LinesEachAndEliotImmBlr80End80GutenbergATaleOf2C3Mddlem5Tess3.r
 #set working directory and load packages tm and quanteda
 setwd(dirname(file.choose()))
 getwd()
@@ -70,7 +71,7 @@ dfAll7WdFeqDf$textNo <- NULL
 
 #add labels and move the label column to the first column
 dfAll7WdFeqDf$Label = c(rep('CD', 50), rep('FH', 50), rep('GE', 50), rep('HM', 50), rep('LM', 50), rep('MC', 50), rep('TH', 50)) #297+1 = 298
-dfAll7WdFeqDfLabled <- dfAll7WdFeqDf[,c(298,1:297)]
+dfAll7WdFeqDfLabled <- dfAll7WdFeqDf[,c(ncol(dfAll7WdFeqDf),1:ncol(dfAll7WdFeqDf)-1)]
 
 # shuffling rows:
 set.seed(12345)
@@ -111,4 +112,42 @@ svm_tune$best.model
 #besides best cost, also best number of support vectors, etc.
 pred_svm_after_tune <- predict(svm_tune$best.model, dfAll7WdFeqDfLabledRandm_norm_test)
 table(pred = pred_svm_after_tune, true_7Authors_tunedSVM = dfAll7WdFeqDfLabledRandm[281:350,1]) #all correct
+
+#---------------------------------------------------------------
+#Charles Dickens's masterpiece A Tale of Two Cities, George Eliot's Middlemarch (300000+ words), and Thomas Hardy's Tess of the d'Urbervilles
+
+dfGutenberg2CitiesMddlemarchTess <- read.table('GutenbergATaleOf2C3Middlemarch5TessOfTheDUrb3Each4000Words.csv', header = TRUE, sep = (','), comment.char = "#")
+#dfGutenberg2CitiesMddlemarchTess <- rbind(dfGutenbergATaleOf2C, dfGutenbergMiddlemarch, dfGutenbergTessOfTheDUrb)
+
+dfGutenberg2CitiesMddlemarchTess$ngram <- lapply(dfGutenberg2CitiesMddlemarchTess$text, function(x) sapply(x, charBigrams))
+dfGutenberg2CitiesMddlemarchTess_corpus <- VCorpus(VectorSource(dfGutenberg2CitiesMddlemarchTess$ngram))
+
+dfGutenberg2CitiesMddlemarchTess_dtDf <- as.data.frame(as.matrix(DocumentTermMatrix(dfGutenberg2CitiesMddlemarchTess_corpus,)))
+#dfGutenberg2CitiesMddlemarchTess_dtDf$textNo <- NULL
+dfGutenberg2CitiesMddlemarchTess_dtDf[setdiff(colnames(dfAll7WdFeqDfLabled), colnames(dfGutenberg2CitiesMddlemarchTess_dtDf))] <- 0
+dfGutenberg2CitiesMddlemarchTessWdFeqDf <- dfGutenberg2CitiesMddlemarchTess_dtDf[colnames(dfAll7WdFeqDfLabled)]
+dfGutenberg2CitiesMddlemarchTessWdFeqDf$Label <- NULL #delete Label col
+dfGutenberg2CitiesMddlemarchTessWdFeqDf_addMaxMin = rbind(dfGutenberg2CitiesMddlemarchTessWdFeqDf, apply(dfAll7WdFeqDfLabledRandm[,-1], 2, max), apply(dfAll7WdFeqDfLabledRandm[,-1], 2, min))
+dfGutenberg2CitiesMddlemarchTessWdFeqDf_normNotReal = (dfGutenberg2CitiesMddlemarchTessWdFeqDf_addMaxMin[1,] - dfGutenberg2CitiesMddlemarchTessWdFeqDf_addMaxMin[13,]) / (dfGutenberg2CitiesMddlemarchTessWdFeqDf_addMaxMin[12,] - dfGutenberg2CitiesMddlemarchTessWdFeqDf_addMaxMin[13,])
+normGeEtc = function(x, y) {
+for (i in 2: (nrow(y)-2)) {
+x = rbind(x, (y[i,] - y[nrow(y),]) / (y[(nrow(y)-1),] - y[nrow(y),]))
+}
+return(x)
+}
+dfGutenberg2CitiesMddlemarchTessWdFeqDf_normNotReal <- normGeEtc(dfGutenberg2CitiesMddlemarchTessWdFeqDf_normNotReal, dfGutenberg2CitiesMddlemarchTessWdFeqDf_addMaxMin)
+
+#KNN! 
+set.seed(12345)
+pred_knn_3TwoCities5Mddlemarch3Tess <- knn(dfAll7WdFeqDfLabledRandm_norm_train, dfGutenberg2CitiesMddlemarchTessWdFeqDf_normNotReal, dfAll7WdFeqDfLabledRandm[1:280,1], k= 18)
+table(pred = pred_knn_3TwoCities5Mddlemarch3Tess, true_3TwoCities5Mddlemarch3Tess_KNN = dfGutenberg2CitiesMddlemarchTess$label) #not accurate 16 best 4/11 wrong!
+
+#svm_no_tune
+pred_svm_3TwoCities5Mddlemarch3Tess <- predict(whichOfThe7_svm_model, dfGutenberg2CitiesMddlemarchTessWdFeqDf_normNotReal)
+table(pred = pred_svm_3TwoCities5Mddlemarch3Tess, true_3TwoCities5Mddlemarch3Tess_SVM = dfGutenberg2CitiesMddlemarchTess$label) #all correct
+#svm_tuned
+pred_svm_after_tune_3TwoCities5Mddlemarch3Tess <- predict(svm_tune$best.model, dfGutenberg2CitiesMddlemarchTessWdFeqDf_normNotReal)
+table(pred = pred_svm_after_tune_3TwoCities5Mddlemarch3Tess, true_3TwoCities5Mddlemarch3Tess_tunedSVM = dfGutenberg2CitiesMddlemarchTess$label) #all correct
+
+
 
